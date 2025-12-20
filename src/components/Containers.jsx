@@ -767,7 +767,7 @@ export function Containers() {
               <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-110">
                 {containers.length}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">总容器数</div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">总容器</div>
             </div>
           </button>
 

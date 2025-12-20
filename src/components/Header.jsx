@@ -400,6 +400,8 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
 
 // 手机底部导航栏组件
 export function MobileBottomNav({ activeTab, onTabChange, windowWidth = 1024 }) {
+  const isMobileSize = windowWidth < 768
+  
   const navItems = [
     {
       id: '#containers',
@@ -429,7 +431,7 @@ export function MobileBottomNav({ activeTab, onTabChange, windowWidth = 1024 }) 
       <nav className="fixed bottom-0 left-0 right-0 z-40 pb-2 bg-gradient-to-t from-white dark:from-gray-800 from-80% to-transparent pt-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         {/* 椭圆形悬浮导航栏 */}
         <div className="mx-3 bg-white dark:bg-gray-800 shadow-2xl rounded-full px-4 py-3 border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
-          <div className="flex items-center justify-center gap-1 sm:gap-2">
+          <div className="flex items-center justify-center gap-8 sm:gap-10">
             {navItems.map((item, index) => {
               const Icon = item.icon
               const isActive = activeTab === item.id

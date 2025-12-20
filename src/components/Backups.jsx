@@ -473,24 +473,40 @@ export function Backups() {
       )}
 
       {/* 统计信息 */}
-      <div className="px-4 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="card p-4 sm:p-6 rounded-2xl">
-          <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-            {backups.length}
+      <div className="px-4 sm:px-6 py-4">
+        <div className="grid grid-cols-3 gap-0 rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          {/* 总备份数 */}
+          <div className="p-3 sm:p-5 text-center relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-110">
+                {backups.length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">总备份数</div>
+            </div>
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">总备份数</div>
-        </div>
-        <div className="card p-4 sm:p-6 rounded-2xl">
-          <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-            {backups.filter(b => b.endsWith('.json')).length}
+
+          {/* JSON 备份 */}
+          <div className="p-3 sm:p-5 text-center relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 transition-transform duration-300 group-hover:scale-110">
+                {backups.filter(b => b.endsWith('.json')).length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">JSON 备份</div>
+            </div>
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">JSON 备份</div>
-        </div>
-        <div className="card p-4 sm:p-6 rounded-2xl">
-          <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-            {backups.filter(b => b.endsWith('.yaml') || b.endsWith('.yml')).length}
+
+          {/* YAML 备份 */}
+          <div className="p-3 sm:p-5 text-center relative overflow-hidden group flex flex-col items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 transition-transform duration-300 group-hover:scale-110">
+                {backups.filter(b => b.endsWith('.yaml') || b.endsWith('.yml')).length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">YAML 备份</div>
+            </div>
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">YAML 备份</div>
         </div>
       </div>
 
