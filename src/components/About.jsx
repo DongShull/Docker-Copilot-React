@@ -54,26 +54,26 @@ export function About() {
             </p>
             
             {/* 赞赏码 */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mt-6 max-w-2xl mx-auto">
               <div className="flex flex-col items-center">
-                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-lg border-2 border-white dark:border-gray-700 hover:shadow-xl transition-all transform hover:scale-105">
+                <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden shadow-lg border-4 border-white dark:border-gray-600 bg-white hover:shadow-xl transition-all transform hover:scale-105">
                   <img 
                     src={wechatImg} 
                     alt="微信赞赏码" 
-                    className="w-full h-full object-contain bg-white"
+                    className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="mt-3 text-sm font-medium text-primary-700 dark:text-primary-300">微信支付</span>
+                <span className="mt-4 text-base font-semibold text-primary-700 dark:text-primary-300">微信支付</span>
               </div>
               <div className="flex flex-col items-center">
-                <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-lg border-2 border-white dark:border-gray-700 hover:shadow-xl transition-all transform hover:scale-105">
+                <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden shadow-lg border-4 border-white dark:border-gray-600 bg-white hover:shadow-xl transition-all transform hover:scale-105">
                   <img 
                     src={alipayImg} 
                     alt="支付宝赞赏码" 
-                    className="w-full h-full object-contain bg-white"
+                    className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="mt-3 text-sm font-medium text-primary-700 dark:text-primary-300">支付宝支付</span>
+                <span className="mt-4 text-base font-semibold text-primary-700 dark:text-primary-300">支付宝支付</span>
               </div>
             </div>
           </div>

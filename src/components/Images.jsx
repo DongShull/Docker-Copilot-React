@@ -260,55 +260,76 @@ export function Images() {
       )}
 
       {/* 统计信息 */}
-      <div className="px-4 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button
-          onClick={() => setFilterStatus(null)}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === null ? "ring-2 ring-primary-400 dark:ring-primary-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-            {images.length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">总镜像数</div>
-        </button>
-        <button
-          onClick={() => setFilterStatus('used')}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === 'used' ? "ring-2 ring-green-400 dark:ring-green-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-            {images.filter(img => img.inUsed).length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">使用中</div>
-        </button>
-        <button
-          onClick={() => setFilterStatus('unused')}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === 'unused' ? "ring-2 ring-yellow-400 dark:ring-yellow-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">
-            {images.filter(img => !img.inUsed).length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">未使用</div>
-        </button>
-        <button
-          onClick={() => setFilterStatus('dangling')}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === 'dangling' ? "ring-2 ring-orange-400 dark:ring-orange-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
-            {images.filter(img => img.tag === 'None' || img.tag === '<none>').length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">无Tag</div>
-        </button>
+      <div className="px-4 sm:px-6 py-4">
+        <div className="grid grid-cols-4 gap-0 rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          {/* 总镜像数 */}
+          <button
+            onClick={() => setFilterStatus(null)}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center",
+              filterStatus === null ? "bg-primary-50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-110">
+                {images.length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">总镜像数</div>
+            </div>
+          </button>
+
+          {/* 使用中 */}
+          <button
+            onClick={() => setFilterStatus('used')}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center",
+              filterStatus === 'used' ? "bg-green-50 dark:bg-green-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 transition-transform duration-300 group-hover:scale-110">
+                {images.filter(img => img.inUsed).length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">使用中</div>
+            </div>
+          </button>
+
+          {/* 未使用 */}
+          <button
+            onClick={() => setFilterStatus('unused')}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center",
+              filterStatus === 'unused' ? "bg-yellow-50 dark:bg-yellow-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 transition-transform duration-300 group-hover:scale-110">
+                {images.filter(img => !img.inUsed).length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">未使用</div>
+            </div>
+          </button>
+
+          {/* 无Tag */}
+          <button
+            onClick={() => setFilterStatus('dangling')}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group flex flex-col items-center justify-center",
+              filterStatus === 'dangling' ? "bg-orange-50 dark:bg-orange-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400 transition-transform duration-300 group-hover:scale-110">
+                {images.filter(img => img.tag === 'None' || img.tag === '<none>').length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">无Tag</div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* 筛选提示 */}

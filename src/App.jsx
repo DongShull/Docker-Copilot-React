@@ -4,7 +4,6 @@ import { Sidebar, MobileBottomNav } from './components/Header.jsx'
 import { Containers } from './components/Containers.jsx'
 import { Images } from './components/Images.jsx'
 import { Backups } from './components/Backups.jsx'
-import { Icons } from './components/Icons.jsx'
 import { About } from './components/About.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -118,8 +117,6 @@ function AppContent() {
         return <Containers />
       case '#images':
         return <Images />
-      case '#icons':
-        return <Icons />
       case '#backups':
         return <Backups />
       case '#about':
@@ -148,7 +145,7 @@ function AppContent() {
         "overflow-y-auto",
         "min-h-screen",
         windowWidth < 768 
-          ? 'pb-[calc(64px+env(safe-area-inset-bottom))]' 
+          ? 'pb-28' 
           : windowWidth < 1024 
             ? 'ml-20' 
             : isSidebarCollapsed 

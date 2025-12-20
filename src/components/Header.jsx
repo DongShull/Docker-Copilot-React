@@ -89,11 +89,6 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
       icon: DatabaseBackup,
     },
     {
-      id: '#icons',
-      label: '图标',
-      icon: Palette,
-    },
-    {
       id: '#about',
       label: '关于',
       icon: Info,
@@ -103,7 +98,7 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
   return (
     <>
       {/* 顶部导航栏 - 仅在手机模式（sm）显示 */}
-      {windowWidth < 768 && (
+      {isMobileSize && (
       <div className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-3 sm:px-4 z-40 shadow-sm">
         {/* 左侧：Logo 和项目信息 */}
         <button
@@ -137,10 +132,10 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
       )}
 
       {/* 添加顶部导航栏的占位符 - 仅在手机模式显示 */}
-      {windowWidth < 768 && <div className="h-14" />}
+      {isMobileSize && <div className="h-14" />}
 
       {/* 侧边栏遮罩 - 仅在手机菜单打开时显示 */}
-      {windowWidth < 768 && isMobileMenuOpen && (
+      {isMobileSize && isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
@@ -153,12 +148,12 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
           "fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-xl lg:shadow-none transform transition-all duration-300 ease-in-out flex flex-col",
           isCollapsed ? "w-20" : "w-64 sm:w-72 md:w-64",
           // 手机模式：根据菜单打开状态显示/隐藏；md及以上：始终显示
-          windowWidth < 768 
+          isMobileSize
             ? (isMobileMenuOpen ? "translate-x-0" : "-translate-x-full")
             : "translate-x-0",
           "max-h-screen overflow-y-auto",
           // 手机模式距顶部导航栏下方，其他模式从顶部开始
-          windowWidth < 768 ? "top-14" : "top-0",
+          isMobileSize ? "top-14" : "top-0",
           "border-r border-gray-200 dark:border-gray-700"
         )}
       >
@@ -430,29 +425,31 @@ export function MobileBottomNav({ activeTab, onTabChange, windowWidth = 1024 }) 
 
   return (
     <>
-      {windowWidth < 768 && (
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
-        <div className="flex items-center justify-around h-16 px-2" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = activeTab === item.id
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 py-2 px-3 rounded-lg transition-all duration-200 active:scale-95 flex-1 min-h-[64px]",
-                  isActive
-                    ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                )}
-                title={item.label}
-              >
-                <Icon className="h-6 w-6 flex-shrink-0" />
-                <span className="text-xs font-medium truncate">{item.label}</span>
-              </button>
-            )
-          })}
+      {isMobileSize && (
+      <nav className="fixed bottom-0 left-0 right-0 z-40 pb-2 bg-gradient-to-t from-white dark:from-gray-800 from-80% to-transparent pt-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+        {/* 椭圆形悬浮导航栏 */}
+        <div className="mx-3 bg-white dark:bg-gray-800 shadow-2xl rounded-full px-4 py-3 border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+          <div className="flex items-center justify-center gap-1 sm:gap-2">
+            {navItems.map((item, index) => {
+              const Icon = item.icon
+              const isActive = activeTab === item.id
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={cn(
+                    "flex flex-col items-center justify-center rounded-full transition-all duration-300 active:scale-90 p-2.5 sm:p-3",
+                    isActive
+                      ? "text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 shadow-md"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  )}
+                  title={item.label}
+                >
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                </button>
+              )
+            })}
+          </div>
         </div>
       </nav>
       )}

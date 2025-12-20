@@ -752,55 +752,76 @@ export function Containers() {
       </div>
 
       {/* 统计信息 */}
-      <div className="px-4 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button
-          onClick={() => setFilterStatus(null)}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === null ? "ring-2 ring-primary-400 dark:ring-primary-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-            {containers.length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">总容器数</div>
-        </button>
-        <button
-          onClick={() => setFilterStatus('running')}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === 'running' ? "ring-2 ring-green-400 dark:ring-green-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-            {containers.filter(c => c.status === 'running').length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">运行中</div>
-        </button>
-        <button
-          onClick={() => setFilterStatus('stopped')}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === 'stopped' ? "ring-2 ring-red-400 dark:ring-red-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mb-2">
-            {containers.filter(c => c.status && c.status.toLowerCase() !== 'running').length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">已停止</div>
-        </button>
-        <button
-          onClick={() => setFilterStatus('update')}
-          className={cn(
-            "card p-4 sm:p-6 rounded-2xl text-left transition-all duration-200 cursor-pointer hover:shadow-lg",
-            filterStatus === 'update' ? "ring-2 ring-yellow-400 dark:ring-yellow-500" : ""
-          )}
-        >
-          <div className="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">
-            {containers.filter(c => c.haveUpdate).length}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">有更新</div>
-        </button>
+      <div className="px-4 sm:px-6 py-4">
+        <div className="grid grid-cols-4 gap-0 rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          {/* 总容器数 */}
+          <button
+            onClick={() => setFilterStatus(null)}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center",
+              filterStatus === null ? "bg-primary-50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-110">
+                {containers.length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">总容器数</div>
+            </div>
+          </button>
+
+          {/* 运行中 */}
+          <button
+            onClick={() => setFilterStatus('running')}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center",
+              filterStatus === 'running' ? "bg-green-50 dark:bg-green-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 transition-transform duration-300 group-hover:scale-110">
+                {containers.filter(c => c.status === 'running').length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">运行中</div>
+            </div>
+          </button>
+
+          {/* 已停止 */}
+          <button
+            onClick={() => setFilterStatus('stopped')}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group border-r border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center",
+              filterStatus === 'stopped' ? "bg-red-50 dark:bg-red-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 transition-transform duration-300 group-hover:scale-110">
+                {containers.filter(c => c.status && c.status.toLowerCase() !== 'running').length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">已停止</div>
+            </div>
+          </button>
+
+          {/* 有更新 */}
+          <button
+            onClick={() => setFilterStatus('update')}
+            className={cn(
+              "p-3 sm:p-5 text-center transition-all duration-300 relative overflow-hidden group flex flex-col items-center justify-center",
+              filterStatus === 'update' ? "bg-yellow-50 dark:bg-yellow-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            )}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 transition-transform duration-300 group-hover:scale-110">
+                {containers.filter(c => c.haveUpdate).length}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">有更新</div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* 容器列表 */}
@@ -898,12 +919,14 @@ export function Containers() {
                       }
                     }}
                     className={cn(
-                      "card relative overflow-hidden transition-all duration-200 hover:shadow-lg border rounded-2xl p-4 cursor-pointer active:scale-98",
+                      "card relative overflow-hidden transition-all duration-200 hover:shadow-lg border rounded-2xl p-4 cursor-pointer active:scale-98 group",
                       isSelected
                         ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-md"
                         : "border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600"
                     )}
                   >
+                    {/* 容器卡片背景渐变 */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/3 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"></div>
                     {/* 背景进度条 */}
                     {containerActions[container.id]?.loading && containerActions[container.id]?.action === 'update' && (
                       <div className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden">
@@ -988,16 +1011,12 @@ export function Containers() {
                                 {container.name}
                               </h3>
                               {container.haveUpdate && (
-                                <span className="ml-2 inline-flex items-center justify-center px-1.5 sm:px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 dark:from-yellow-500 dark:to-yellow-600 animate-pulse shadow-md flex-shrink-0" title="有新版本可更新">
-                                  <img 
-                                    src={icons8Img} 
-                                    alt="更新" 
-                                    className="h-4 w-4 flex-shrink-0"
-                                    style={{ 
-                                      animation: 'bounceArrow 1.5s ease-in-out infinite',
-                                      filter: 'invert(1) hue-rotate(180deg) saturate(3)'
-                                    }}
-                                  />
+                                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-cyan-500/30 animate-bounce flex-shrink-0" title="有新版本可更新" style={{ animationDuration: '2s', letterSpacing: '0.5px' }}>
+                                  <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                                    <polyline points="23 6 13.46 15.54"></polyline>
+                                    <path d="M17 6h6v6"></path>
+                                  </svg>
+                                  新版本
                                 </span>
                               )}
                             </div>
@@ -1076,13 +1095,16 @@ export function Containers() {
                           <button
                             onClick={(e) => { e.stopPropagation(); handleUpdateContainer(container.id) }}
                             className={cn(
-                              "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 border rounded-lg transition-all duration-200 shadow-sm hover:shadow active:scale-95 text-xs font-medium",
-                              container.haveUpdate ? "border-yellow-400 dark:border-yellow-600" : "border-purple-200 dark:border-purple-800"
+                              "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 border rounded-lg transition-all duration-200 shadow-sm hover:shadow active:scale-95 text-xs font-medium relative",
+                              container.haveUpdate ? "border-emerald-400 dark:border-emerald-600 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20" : "border-purple-200 dark:border-purple-800"
                             )}
                             title="更新"
                           >
-                            <Upload className="h-4 w-4" />
-                            <span>更新</span>
+                            {container.haveUpdate && (
+                              <span className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-400/0 via-emerald-400/10 to-emerald-400/0 animate-pulse"></span>
+                            )}
+                            <Upload className="h-4 w-4 relative z-10" />
+                            <span className="relative z-10">更新</span>
                           </button>
                         </>
                       )}
