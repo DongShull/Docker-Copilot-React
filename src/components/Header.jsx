@@ -295,9 +295,8 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">运行中</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">v</span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {backendVersion || '1.0'}
+                      {backendVersion || 'v1.0'}
                     </span>
                   </div>
                 </div>
