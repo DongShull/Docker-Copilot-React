@@ -229,7 +229,7 @@ export function Icons() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          window.open(url, '_blank')
+                          window.open(url, '_blank', 'noopener,noreferrer')
                         }}
                         className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
                         title="查看原图"
@@ -311,7 +311,7 @@ export function Icons() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          window.open(url, '_blank')
+                          window.open(url, '_blank', 'noopener,noreferrer')
                         }}
                         className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded transition-colors"
                         title="查看原图"
@@ -399,7 +399,7 @@ export function Icons() {
 
                 <div className="flex gap-3 pt-4">
                   <button
-                    onClick={() => window.open(selectedIcon.url, '_blank')}
+                    onClick={() => window.open(selectedIcon.url, '_blank', 'noopener,noreferrer')}
                     className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     在新窗口打开

@@ -15,7 +15,28 @@ import { containerAPI, progressAPI, imageAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getImageLogo } from '../config/imageLogos.js'
+import { getImageRepository } from '../utils/imageReference.js'
+import { parseStoredRecord } from '../utils/storage.js'
 import icons8Img from '../assets/icons8.png'
+
+function ContainerLogo({ src, alt }) {
+  const [failed, setFailed] = useState(false)
+  if (!src || failed) {
+    return (
+      <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+        <Package className="h-6 w-6 text-white" />
+      </div>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="h-12 w-12 rounded-xl object-cover shadow-sm flex-shrink-0"
+      onError={() => setFailed(true)}
+    />
+  )
+}
 
 // 格式化运行时间为中文
 function formatRunningTime(runningTime) {
@@ -1033,31 +1054,7 @@ export function Containers() {
                               }
                             }
 
-                            if (iconUrl) {
-                              return (
-                                <img
-                                  src={iconUrl}
-                                  alt={container.name}
-                                  className="h-12 w-12 rounded-xl object-cover shadow-sm flex-shrink-0"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = `
-                                    <div class="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-white">
-                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                                      </svg>
-                                    </div>
-                                  `;
-                                  }}
-                                />
-                              );
-                            } else {
-                              return (
-                                <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-                                  <Package className="h-6 w-6 text-white" />
-                                </div>
-                              );
-                            }
+                            return <ContainerLogo src={iconUrl} alt={container.name} />;
                           })()}
                         </div>
 
@@ -1221,7 +1218,7 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
       }
       return {}
     },
-    initialData: () => JSON.parse(localStorage.getItem('docker_copilot_image_logos') || '{}'),
+    initialData: () => parseStoredRecord(localStorage.getItem('docker_copilot_image_logos')),
   })
 
   // 当容器切换时，更新表单字段的值
@@ -1233,15 +1230,18 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
 
   // 实时更新容器状态
   React.useEffect(() => {
-    const interval = setInterval(async () => {
+    let cancelled = false
+    let timer
+    const refreshContainer = async () => {
       try {
         const response = await containerAPI.getContainers();
-        if (response.data.code === 0) {
+        if (cancelled) return
+        if (response.data.code === 200 || response.data.code === 0) {
           const containers = response.data.data;
           const updatedContainer = containers.find(c => c.id === container.id);
           if (updatedContainer) {
             // 检查是否有镜像图标
-            const imageLogos = JSON.parse(localStorage.getItem('docker_copilot_image_logos') || '{}');
+            const imageLogos = parseStoredRecord(localStorage.getItem('docker_copilot_image_logos'));
 
             // 如果容器没有自定义图标，则查找镜像图标
             if (!updatedContainer.iconUrl) {
@@ -1253,12 +1253,12 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
                 updatedContainer.iconUrl = imageLogos[imageFullName];
               } else {
                 // 如果精确匹配失败，尝试镜像名称匹配（不包含tag部分）
-                const imageName = updatedContainer.usingImage.split(':')[0];
+                const imageName = getImageRepository(updatedContainer.usingImage);
 
                 // 遍历所有镜像图标，查找匹配的镜像名称
                 for (const [imageId, logoUrl] of Object.entries(imageLogos)) {
                   // 检查镜像名称是否匹配（不包含tag部分）
-                  const logoImageName = imageId.split(':')[0];
+                  const logoImageName = getImageRepository(imageId);
                   if (imageName === logoImageName) {
                     updatedContainer.iconUrl = logoUrl;
                     break;
@@ -1271,11 +1271,17 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
           }
         }
       } catch (error) {
-        console.error('获取容器状态失败:', error);
+        if (!cancelled) console.error('获取容器状态失败:', error);
+      } finally {
+        if (!cancelled) timer = setTimeout(refreshContainer, 3000)
       }
-    }, 3000); // 每3秒获取一次最新状态
+    }
+    refreshContainer()
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    };
   }, [container.id]);
 
   const handleIconUpload = async (event) => {
@@ -1309,7 +1315,7 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
         const filename = response.data.data // 后端返回的文件名
         if (filename) {
           const newPath = `/src/config/image/${filename}`
-          const imageLogos = JSON.parse(localStorage.getItem('docker_copilot_image_logos') || '{}')
+          const imageLogos = parseStoredRecord(localStorage.getItem('docker_copilot_image_logos'))
 
           // 更新映射: 镜像名 -> 新路径
           imageLogos[targetImageName] = newPath
@@ -1322,11 +1328,9 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
           }))
 
           // 触发全局事件以便其他组件（如列表）更新
-          window.dispatchEvent(new Event('storage'))
-
           // 无效化查询以刷新列表和图标
-          await queryClient.invalidateQueries(['containers'])
-          await queryClient.invalidateQueries(['customIcons'])
+          await queryClient.invalidateQueries({ queryKey: ['containers'] })
+          await queryClient.invalidateQueries({ queryKey: ['customIcons'] })
 
           console.log('✅ 图标上传成功并已应用')
         }
@@ -1364,7 +1368,7 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
       }
 
       // 无效化查询以触发重新获取数据
-      await queryClient.invalidateQueries(['containers'])
+      await queryClient.invalidateQueries({ queryKey: ['containers'] })
 
       setIsActionProcessing(false);
       setCurrentAction('');
@@ -1384,7 +1388,7 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
         await onRename(container.id, name)
 
         // 无效化查询以触发重新获取数据
-        await queryClient.invalidateQueries(['containers'])
+        await queryClient.invalidateQueries({ queryKey: ['containers'] })
 
         // 更新当前容器状态
         setCurrentContainer({ ...currentContainer, name: name })
@@ -1436,7 +1440,7 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
             console.log('✅ 容器更新任务已启动，请在列表中查看进度')
           } else {
             // 没有taskID，更新完成
-            await queryClient.invalidateQueries(['containers'])
+            await queryClient.invalidateQueries({ queryKey: ['containers'] })
             setImageNameAndTag(imageNameAndTag) // 更新本地状态
             console.log('✅ 容器镜像更新完成')
           }
@@ -1495,9 +1499,9 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
           iconUrl = imageLogos[imageFullName];
         } else {
           // 降级匹配逻辑
-          const imageName = imageFullName.split(':')[0];
+          const imageName = getImageRepository(imageFullName);
           for (const [imageId, logoUrl] of Object.entries(imageLogos)) {
-            if (imageId === imageName || imageFullName.startsWith(imageId)) {
+            if (getImageRepository(imageId) === imageName) {
               iconUrl = logoUrl;
               break;
             }

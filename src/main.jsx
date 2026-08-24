@@ -26,7 +26,8 @@ const setFavicon = () => {
 const registerServiceWorker = () => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+      const basePath = import.meta.env.BASE_URL
+      navigator.serviceWorker.register(`${basePath}sw.js`, { scope: basePath })
         .then(registration => {
           console.log('Service Worker registered:', registration)
         })

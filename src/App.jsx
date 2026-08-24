@@ -45,8 +45,9 @@ function AppContent() {
   const isSidebarCollapsed = getSmartCollapsedState(windowWidth, userPreferredCollapsed)
 
   useEffect(() => {
-    // 检查本地存储中是否有token
-    const token = localStorage.getItem('docker_copilot_token')
+    // 不再持久化管理员令牌；清理旧版本遗留的 localStorage token。
+    localStorage.removeItem('docker_copilot_token')
+    const token = sessionStorage.getItem('docker_copilot_token')
     if (token) {
       setIsAuthenticated(true)
     }
@@ -65,19 +66,6 @@ function AppContent() {
       }
     }
     syncIcons()
-
-    // 监听storage事件，当其他标签页修改localStorage时更新认证状态
-    const handleStorageChange = (e) => {
-      if (e.key === 'docker_copilot_token') {
-        if (e.newValue) {
-          setIsAuthenticated(true)
-        } else {
-          setIsAuthenticated(false)
-        }
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
 
     // 监听自定义事件，用于在本标签页中处理认证状态变化
     const handleAuthChange = (e) => {
@@ -99,7 +87,6 @@ function AppContent() {
     window.addEventListener('resize', handleResize)
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('authChange', handleAuthChange)
       window.removeEventListener('resize', handleResize)
     }
@@ -112,7 +99,7 @@ function AppContent() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('docker_copilot_token')
+    sessionStorage.removeItem('docker_copilot_token')
     setIsAuthenticated(false)
     // 触发自定义事件通知其他组件认证状态已更新
     window.dispatchEvent(new CustomEvent('authChange', { detail: { authenticated: false } }))

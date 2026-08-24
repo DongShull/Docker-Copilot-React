@@ -10,8 +10,29 @@ import {
   Save,
   X
 } from 'lucide-react'
-import { containerAPI } from '../api/client.js'
+import { containerAPI, progressAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
+
+const delay = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds))
+
+async function waitForRestoreTask(taskID) {
+  const deadline = Date.now() + 30 * 60 * 1000
+  while (Date.now() < deadline) {
+    const response = await progressAPI.getProgress(taskID)
+    const task = response.data?.data
+    if (response.data?.code !== 200 || !task) {
+      throw new Error(response.data?.msg || '无法读取恢复任务状态')
+    }
+    if (task.status === 'failed') {
+      throw new Error(task.detailMsg || task.message || '恢复失败')
+    }
+    if (task.isDone === true && task.status === 'completed') {
+      return task
+    }
+    await delay(2000)
+  }
+  throw new Error('恢复任务超时，请检查容器状态')
+}
 
 export function Backups() {
   const [backups, setBackups] = useState([])
@@ -117,6 +138,11 @@ export function Backups() {
       console.log('恢复备份响应:', response.data)
 
       if (response.data && (response.data.code === 0 || response.data.code === 200)) {
+        const taskID = response.data.data?.taskID
+        if (!taskID) {
+          throw new Error('后端未返回恢复任务 ID')
+        }
+        await waitForRestoreTask(taskID)
         setSuccessModal({ isOpen: true, message: `备份 ${filename} 恢复成功` })
       } else {
         setError(response.data?.msg || `备份 ${filename} 恢复失败`)
@@ -158,7 +184,7 @@ export function Backups() {
     setConfirmModal({
       isOpen: true,
       title: '恢复备份',
-      message: `确定要恢复备份文件 ${filename} 吗？这将覆盖当前容器配置。`,
+      message: `确定要恢复备份文件 ${filename} 吗？备份中的容器会被重新创建，同名容器将导致该项恢复失败。`,
       onConfirm: () => {
         setConfirmModal({ ...confirmModal, isOpen: false })
         handleRestore(filename)

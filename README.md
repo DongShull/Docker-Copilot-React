@@ -4,9 +4,8 @@
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 
 ## ✨ 为什么选择 Docker Copilot？
 
@@ -18,13 +17,13 @@
 - 🔄 **后台进度追踪** - 更新、备份等操作实时显示进度，不打断工作流
 - 🎨 **深色模式护眼** - 适配系统主题，自动切换亮暗界面
 - 📱 **移动友好设计** - 从桌面到平板，完美适配各种屏幕尺寸
-- 🔒 **安全认证机制** - JWT令牌加密传输，保护您的Docker环境
+- 🔒 **安全认证机制** - 使用签名 JWT 鉴权；生产环境必须配合 HTTPS，防止令牌在传输中泄露
 
 ## 🎬 快速开始
 
 ### 前置要求
 
-- Node.js 16+ 💻
+- Node.js 22.12+ 💻
 - npm 或 yarn 📦
 - 运行中的 Docker Copilot 后端服务 🐳
 
@@ -36,7 +35,7 @@ git clone <repository-url>
 cd Docker-Copilot-React
 
 # 2️⃣ 安装依赖
-npm install
+npm ci
 
 # 3️⃣ 启动开发服务器
 npm run dev
@@ -60,7 +59,7 @@ npm run dev
 - **Docker Hub链接** - 直接跳转到官方镜像仓库
 
 ### 💾 备份恢复
-- **一键备份** - 备份容器配置和数据
+- **一键备份** - 备份容器创建配置（不包含卷中的业务数据）
 - **版本管理** - 保留多个备份版本，方便回滚
 - **快速恢复** - 一键恢复到任意备份点
 - **Compose导出** - 将备份导出为Docker Compose文件
@@ -80,10 +79,10 @@ npm run dev
 | 技术 | 版本 | 说明 |
 |------|------|------|
 | **React** | 18.2 | UI框架，构建交互式界面 |
-| **Vite** | 5.0 | 极速构建工具，开发体验顶级 |
+| **Vite** | 8.2 | 极速构建工具，开发体验顶级 |
 | **Tailwind CSS** | 3.3 | 原子化CSS框架，快速构建样式 |
 | **React Query** | 5.8 | 服务端状态管理，智能缓存 |
-| **Axios** | 1.6 | HTTP客户端，简洁的API请求 |
+| **Axios** | 1.19 | HTTP客户端，简洁的API请求 |
 | **Lucide React** | 0.553 | 精美图标库，超过450个图标 |
 
 ## 📁 项目结构
@@ -144,6 +143,7 @@ npm run dev    # 启动开发服务器，支持热更新
 ```bash
 npm run build  # 优化编译，生成dist目录
 npm run preview # 本地预览生产版本
+npm test       # 运行镜像引用和版本比较测试
 ```
 
 ### 部署步骤
@@ -154,12 +154,7 @@ npm run build
 ```
 
 #### 2. 配置后端地址
-编辑 `src/api/client.js`，修改 API 基础地址：
-```javascript
-const apiClient = axios.create({
-  baseURL: 'http://your-backend-server:port'
-})
-```
+同源部署无需额外配置；独立前端容器可设置 `VITE_API_BASE_URL=https://your-backend-server`。运行时配置会写入独立配置文件，不会拼接到 HTML 中。
 
 #### 3. 部署到Web服务器
 将 `dist` 目录部署到您的Web服务器：
@@ -183,10 +178,6 @@ const apiClient = axios.create({
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📄 许可证
-
-MIT License - 详见 [LICENSE](LICENSE) 文件
-
 ---
 
 <div align="center">
@@ -196,12 +187,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 Made with ❤️ for Docker lovers
 
 </div>
-```
-
-```
-# Docker Copilot Frontend
-
-Docker 容器管理前端应用
 
 ## 使用 Docker 运行
 
@@ -210,12 +195,9 @@ Docker 容器管理前端应用
 ```bash
 docker run -d \
   --name dcf \
-  --restart always \
-  --network bridge \
-  -p 12713:12713 \
-  -e VITE_API_BASE_URL=http://192.168.50.4:12712 \
-  -e NODE_ENV=production \
-  -v /vol1/1000/DSpace/DockerCopilot/DCF:/app/src/config:rw \
+  --restart unless-stopped \
+  -p 127.0.0.1:12713:12713 \
+  -e VITE_API_BASE_URL=https://docker-api.example.com \
   dongshull/docker-copilot-frontend:latest
 ```
 
@@ -224,91 +206,23 @@ docker run -d \
 创建 `docker-compose.yml` 文件：
 
 ```yaml
-version: '3.8'
-
 services:
   docker-copilot-frontend:
     image: dongshull/docker-copilot-frontend:latest
     container_name: dcf
-    restart: always
-    network_mode: bridge
+    restart: unless-stopped
     ports:
-      - "12713:12713"
+      - "127.0.0.1:12713:12713"
     environment:
-      - VITE_API_BASE_URL=http://192.168.50.4:12712
-      - NODE_ENV=production
-    volumes:
-      - /vol1/1000/DSpace/DockerCopilot/DCF:/app/src/config:rw
+      VITE_API_BASE_URL: https://docker-api.example.com
 ```
 
 然后运行：
 
 ```bash
-docker-compose up -d
-```
-
-## 配置文件目录结构
-
-挂载的目录 `/vol1/1000/DSpace/DockerCopilot/DCF` 应该具有以下结构：
-
-```
-DCF/
-├── imageLogos.js (可选的自定义配置文件)
-└── image/
-    ├── 146.png
-    ├── 132.png
-    ├── 165.png
-    ├── 159.png
-    ├── 175.png
-    ├── 189.png
-    ├── IT-Tools_w7z24.webp
-    ├── QBittorrent_Q41Q0.webp
-    ├── Sub-Store.webp
-    ├── 718.png
-    ├── 100.png
-    └── 4.png
-```
-
-## 自动初始化配置目录
-
-当您首次启动容器时，如果宿主机挂载的目录（如 `/vol1/1000/DSpace/DockerCopilot/DCF`）为空，容器会自动将镜像中内置的配置文件复制到该目录中。
-
-这意味着您不需要手动复制配置文件，容器会自动完成初始化过程。
-
-## 配置文件
-
-你还可以在挂载的目录中添加自定义配置文件：
-
-1. 在 `/vol1/1000/DSpace/DockerCopilot/DCF` 目录下创建 `imageLogos.js` 文件来自定义镜像logo映射：
-
-```javascript
-// 自定义镜像logo配置
-export const customImageLogos = {
-  "your-custom-image": "/src/config/image/your-logo.png"
-};
+docker compose up -d
 ```
 
 ## 故障排除
 
-1. 如果遇到权限问题，请确保 Docker 容器有权限访问挂载的目录：
-   ```bash
-   chmod -R 755 /vol1/1000/DSpace/DockerCopilot/DCF
-   ```
-
-2. 如果目录不存在，请先创建：
-   ```bash
-   mkdir -p /vol1/1000/DSpace/DockerCopilot/DCF/image
-   ```
-
-3. 确保配置文件目录包含所需的图片文件，可以从项目源码中复制：
-   ```bash
-   cp -r src/config/image /vol1/1000/DSpace/DockerCopilot/DCF/
-   ```
-
-4. 确保使用读写模式（`:rw`）而不是只读模式（`:ro`）挂载卷，否则容器将无法访问配置文件
-
-5. 如果自动初始化失败，请检查容器日志：
-   ```bash
-   docker logs dcf
-   ```
-   
+如果页面无法访问后端，请确认 `VITE_API_BASE_URL` 使用 `http://` 或 `https://`，并检查后端的 `CORS_ALLOWED_ORIGINS` 和 TLS 配置。查看容器日志可使用 `docker logs dcf`。

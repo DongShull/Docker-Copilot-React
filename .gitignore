@@ -1,7 +1,7 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # Compiled output
-/dist
+# dist is intentionally versioned because dockerCopilot embeds this frontend bundle.
 /tmp
 /out-tsc
 /bazel-out

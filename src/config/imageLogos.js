@@ -33,6 +33,7 @@ import NextChatLogo from '../assets/logos/next-chat.png';
 import MdcNgLogo from '../assets/logos/mdc-ng.png';
 import RichDogLogo from '../assets/logos/rich-dog.svg';
 import MsTmdbLogo from '../assets/logos/ms_tmdb.png';
+import { getImageRepository } from '../utils/imageReference.js';
 
 export const builtInImageLogos = {
   "xylplm/media-saber": MediaSaberLogo,
@@ -76,7 +77,7 @@ export const builtInImageLogos = {
 // 优先级: 内置logo > 用户自定义 > 默认图标
 export const getImageLogo = (imageName, customLogos = {}) => {
   // 先检查内置logo（优先级最高）
-  const baseImageName = imageName.split(':')[0]; // 去掉tag部分
+  const baseImageName = getImageRepository(imageName);
 
   // 优先匹配完整镜像名（包含 registry/namespace）
   if (builtInImageLogos[baseImageName]) {
@@ -121,7 +122,7 @@ export const getImageLogo = (imageName, customLogos = {}) => {
         return url;
       }
       // 反向检查：如果自定义图标配置的是 nginx:latest，但当前是 nginx
-      if (key.split(':')[0] === baseImageName) {
+      if (getImageRepository(key) === baseImageName) {
         return url;
       }
     } catch (e) {
@@ -140,7 +141,7 @@ export const getSupportedImageNames = () => {
 
 // 检查镜像是否有内置logo
 export const hasBuiltInLogo = (imageName) => {
-  const baseImageName = imageName.split(':')[0];
+  const baseImageName = getImageRepository(imageName);
   if (builtInImageLogos[baseImageName]) return true;
   const simpleName = baseImageName.split('/').pop();
   if (builtInImageLogos[simpleName]) return true;
