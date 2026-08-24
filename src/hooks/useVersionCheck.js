@@ -20,12 +20,14 @@ export function useVersionCheck() {
         
         let backendVersion = 'unknown'
         let buildDate = ''
+        let updateMode = 'container'
         
         if (localResponse.data.code === 200 || localResponse.data.code === 0) {
           const localData = localResponse.data.data
           if (localData && typeof localData === 'object') {
             backendVersion = localData.version || 'unknown'
             buildDate = localData.buildDate || ''
+            updateMode = localData.updateMode || 'container'
           } else if (typeof localData === 'string') {
             backendVersion = localData
           }
@@ -53,6 +55,7 @@ export function useVersionCheck() {
           backendVersion,
           remoteVersion,
           buildDate,
+          updateMode,
           hasBackendUpdate: shouldUpdate(backendVersion, remoteVersion)
         }
       } catch (error) {
@@ -61,6 +64,7 @@ export function useVersionCheck() {
           backendVersion: 'unknown',
           remoteVersion: 'unknown',
           buildDate: '',
+          updateMode: 'container',
           hasBackendUpdate: false
         }
       }
@@ -98,6 +102,7 @@ export function useVersionCheck() {
     backendVersion: versionData?.backendVersion,
     remoteVersion: versionData?.remoteVersion,
     buildDate: versionData?.buildDate,
+    updateMode: versionData?.updateMode || 'container',
     hasBackendUpdate: versionData?.hasBackendUpdate,
     
     // 方法

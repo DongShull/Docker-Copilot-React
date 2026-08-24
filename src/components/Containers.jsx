@@ -14,29 +14,9 @@ import {
 import { containerAPI, progressAPI, imageAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getImageLogo } from '../config/imageLogos.js'
-import { getImageRepository } from '../utils/imageReference.js'
+import { ImageIcon } from './ImageIcon.jsx'
 import { parseStoredRecord } from '../utils/storage.js'
 import icons8Img from '../assets/icons8.png'
-
-function ContainerLogo({ src, alt }) {
-  const [failed, setFailed] = useState(false)
-  if (!src || failed) {
-    return (
-      <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-        <Package className="h-6 w-6 text-white" />
-      </div>
-    )
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className="h-12 w-12 rounded-xl object-cover shadow-sm flex-shrink-0"
-      onError={() => setFailed(true)}
-    />
-  )
-}
 
 // 格式化运行时间为中文
 function formatRunningTime(runningTime) {
@@ -388,6 +368,17 @@ export function Containers() {
         console.error('容器未找到')
         return
       }
+      if (container.isSelf) {
+        setConfirmModal({
+          isOpen: true,
+          title: '请从部署端更新',
+          message: 'Docker Copilot 不能停止自身后再完成替换。请执行 docker compose pull && docker compose up -d。',
+          onConfirm: () => setConfirmModal({ isOpen: false }),
+          onCancel: null,
+          type: 'warning'
+        })
+        return
+      }
 
       console.log(`开始更新容器 "${container.name}"，使用镜像: ${container.usingImage}`)
 
@@ -479,8 +470,9 @@ export function Containers() {
 
   // 轮询进度
   const pollProgress = async (containerId, taskID) => {
-    const maxAttempts = 60 // 最多轮询60次 (2分钟)
+    const maxAttempts = 1800 // 包含最长 30 分钟排队和 30 分钟更新执行
     let attempts = 0
+    let consecutiveErrors = 0
     let pollTimer = null
 
     const clearPollState = () => {
@@ -504,6 +496,7 @@ export function Containers() {
       try {
         attempts++
         const response = await progressAPI.getProgress(taskID)
+        consecutiveErrors = 0
         console.log(`进度查询[${attempts}/${maxAttempts}]:`, response.data)
 
         const data = response.data
@@ -596,10 +589,13 @@ export function Containers() {
         }
       } catch (error) {
         console.error('查询进度失败:', error)
+        consecutiveErrors++
+        if (attempts < maxAttempts && consecutiveErrors < 5) {
+          pollTimer = setTimeout(poll, 2000)
+          return
+        }
         clearPollState()
-        console.error(`❌ 更新失败: ${error.response?.data?.msg || error.message}`)
-        // 显示网络错误或其他异常情况的友好提示
-
+        console.error(`❌ 更新进度查询失败: ${error.response?.data?.msg || error.message}`)
       }
     }
 
@@ -1032,30 +1028,14 @@ export function Containers() {
                       <div className="relative z-10 flex items-center gap-3">
                         {/* 图标 */}
                         <div className="flex-shrink-0">
-                          {(() => {
-                            let iconUrl = container.iconUrl;
-                            if (!iconUrl && container.usingImage) {
-                              const builtInLogo = getImageLogo(container.usingImage);
-                              if (builtInLogo) {
-                                iconUrl = builtInLogo;
-                              } else {
-                                // 如果没有内置logo，则尝试从用户自定义中查找
-                                // const imageLogos = JSON.parse(localStorage.getItem('docker_copilot_image_logos') || '{}');
-                                // 使用 React Query 获取的数据
-                                const imageLogos = customIcons;
-
-                                for (const [imageName, logoUrl] of Object.entries(imageLogos)) {
-                                  if (container.usingImage.startsWith(imageName) ||
-                                    container.usingImage.includes(`${imageName}:`)) {
-                                    iconUrl = logoUrl;
-                                    break;
-                                  }
-                                }
-                              }
-                            }
-
-                            return <ContainerLogo src={iconUrl} alt={container.name} />;
-                          })()}
+                          <ImageIcon
+                            imageName={container.usingImage}
+                            customLogos={customIcons}
+                            hints={container.iconHints || []}
+                            overrideURL={container.iconUrl}
+                            alt={container.name}
+                            className="h-12 w-12 rounded-xl shadow-sm flex-shrink-0"
+                          />
                         </div>
 
                         {/* 状态指示器（放在图标和信息之间） */}
@@ -1148,13 +1128,14 @@ export function Containers() {
 
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleUpdateContainer(container.id) }}
+                                disabled={container.isSelf}
                                 className={cn(
-                                  "flex-1 flex items-center justify-center gap-1 px-1 py-1.5 bg-white dark:bg-gray-800 border rounded-lg transition-all duration-200 shadow-sm hover:shadow active:scale-95 text-xs font-medium whitespace-nowrap",
+                                  "flex-1 flex items-center justify-center gap-1 px-1 py-1.5 bg-white dark:bg-gray-800 border rounded-lg transition-all duration-200 shadow-sm hover:shadow active:scale-95 text-xs font-medium whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed",
                                   container.haveUpdate
                                     ? "text-yellow-600 dark:text-yellow-400 border-yellow-400 dark:border-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
                                     : "text-purple-600 dark:text-purple-400 border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800"
                                 )}
-                                title="更新"
+                                title={container.isSelf ? '请通过 Docker Compose 更新本容器' : '更新'}
                               >
                                 <Upload className="h-4 w-4" />
                                 <span>更新</span>
@@ -1188,6 +1169,7 @@ export function Containers() {
             onRename={handleRenameContainer}
             onUpdate={handleUpdateContainer}
             onAction={handleContainerAction}
+            setConfirmModal={setConfirmModal}
           />
         )
       }
@@ -1196,7 +1178,7 @@ export function Containers() {
 }
 
 // 容器详情弹窗组件
-function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction }) {
+function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction, setConfirmModal }) {
   const queryClient = useQueryClient()
   const [name, setName] = useState(container.name)
   const [imageNameAndTag, setImageNameAndTag] = useState(container.usingImage)
@@ -1239,36 +1221,7 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
         if (response.data.code === 200 || response.data.code === 0) {
           const containers = response.data.data;
           const updatedContainer = containers.find(c => c.id === container.id);
-          if (updatedContainer) {
-            // 检查是否有镜像图标
-            const imageLogos = parseStoredRecord(localStorage.getItem('docker_copilot_image_logos'));
-
-            // 如果容器没有自定义图标，则查找镜像图标
-            if (!updatedContainer.iconUrl) {
-              // 使用完整的镜像名称和标签进行匹配
-              const imageFullName = updatedContainer.usingImage;
-
-              // 首先尝试精确匹配（包含tag）
-              if (imageLogos[imageFullName]) {
-                updatedContainer.iconUrl = imageLogos[imageFullName];
-              } else {
-                // 如果精确匹配失败，尝试镜像名称匹配（不包含tag部分）
-                const imageName = getImageRepository(updatedContainer.usingImage);
-
-                // 遍历所有镜像图标，查找匹配的镜像名称
-                for (const [imageId, logoUrl] of Object.entries(imageLogos)) {
-                  // 检查镜像名称是否匹配（不包含tag部分）
-                  const logoImageName = getImageRepository(imageId);
-                  if (imageName === logoImageName) {
-                    updatedContainer.iconUrl = logoUrl;
-                    break;
-                  }
-                }
-              }
-            }
-
-            setCurrentContainer(updatedContainer);
-          }
+          if (updatedContainer) setCurrentContainer(updatedContainer);
         }
       } catch (error) {
         if (!cancelled) console.error('获取容器状态失败:', error);
@@ -1405,6 +1358,17 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
   }
 
   const handleSave = async () => {
+    if (currentContainer.isSelf) {
+      setConfirmModal({
+        isOpen: true,
+        title: '请从部署端更新',
+        message: '请执行 docker compose pull && docker compose up -d 更新 Docker Copilot。',
+        onConfirm: () => setConfirmModal({ isOpen: false }),
+        onCancel: null,
+        type: 'warning'
+      })
+      return
+    }
     // 如果镜像tag发生变化，则更新容器
     if (imageNameAndTag !== currentContainer.usingImage) {
       try {
@@ -1481,58 +1445,6 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
 
   // 获取容器图标 - 与列表显示逻辑一致
   const getContainerIcon = () => {
-    let iconUrl = currentContainer.iconUrl;
-
-    // 如果容器没有自定义图标，则查找镜像图标
-    if (!iconUrl && currentContainer.usingImage) {
-      // 优先使用内置logo配置（不依赖localStorage）
-      const builtInLogo = getImageLogo(currentContainer.usingImage);
-      if (builtInLogo) {
-        iconUrl = builtInLogo;
-      } else {
-        // 如果没有内置logo，则尝试从用户自定义中查找
-        // const imageLogos = JSON.parse(localStorage.getItem('docker_copilot_image_logos') || '{}');
-        const imageLogos = customIcons;
-        const imageFullName = currentContainer.usingImage;
-
-        if (imageLogos[imageFullName]) {
-          iconUrl = imageLogos[imageFullName];
-        } else {
-          // 降级匹配逻辑
-          const imageName = getImageRepository(imageFullName);
-          for (const [imageId, logoUrl] of Object.entries(imageLogos)) {
-            if (getImageRepository(imageId) === imageName) {
-              iconUrl = logoUrl;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    const IconContent = () => {
-      if (iconUrl) {
-        return (
-          <img
-            src={iconUrl}
-            alt={currentContainer.name}
-            className="h-12 w-12 rounded-xl object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
-          />
-        );
-      }
-      return null;
-    };
-
-    const FallbackIcon = () => (
-      <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white" style={{ display: iconUrl ? 'none' : 'flex' }}>
-        <Package className="h-6 w-6" />
-      </div>
-    );
-
     return (
       <div
         className="relative group cursor-pointer"
@@ -1544,11 +1456,17 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
           ref={fileInputRef}
           onChange={handleIconUpload}
           className="hidden"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          accept="image/png,image/jpeg,image/webp,image/gif"
         />
 
-        <IconContent />
-        <FallbackIcon />
+        <ImageIcon
+          imageName={currentContainer.usingImage}
+          customLogos={customIcons}
+          hints={currentContainer.iconHints || []}
+          overrideURL={currentContainer.iconUrl}
+          alt={currentContainer.name}
+          className="h-12 w-12 rounded-xl"
+        />
 
         {/* 悬停覆盖层 */}
         <div className="absolute inset-0 bg-black bg-opacity-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1645,12 +1563,12 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
                 onChange={(e) => setImageNameAndTag(e.target.value)}
                 className="input flex-1"
                 placeholder="例如: nginx:latest"
-                disabled={isActionProcessing || isUpdating}
+                disabled={isActionProcessing || isUpdating || currentContainer.isSelf}
               />
               <button
                 onClick={handleSave}
-                disabled={isUpdating || (imageNameAndTag === currentContainer.usingImage) || !imageNameAndTag.trim()}
-                className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center ${isUpdating || (imageNameAndTag === currentContainer.usingImage) || !imageNameAndTag.trim()
+                disabled={currentContainer.isSelf || isUpdating || (imageNameAndTag === currentContainer.usingImage) || !imageNameAndTag.trim()}
+                className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center ${currentContainer.isSelf || isUpdating || (imageNameAndTag === currentContainer.usingImage) || !imageNameAndTag.trim()
                   ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
                   : 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600'
                   }`}
@@ -1678,12 +1596,12 @@ function ContainerDetailModal({ container, onClose, onRename, onUpdate, onAction
             <div className="flex gap-2 w-full sm:w-auto">
               <button
                 onClick={() => onUpdate(container.id)}
-                disabled={isActionProcessing || isUpdating}
-                className={`flex-1 sm:flex-none px-2 sm:px-4 py-2 text-sm rounded-lg transition-colors flex items-center justify-center sm:justify-start gap-1 sm:gap-2 ${isActionProcessing && currentAction === 'update'
+                disabled={isActionProcessing || isUpdating || currentContainer.isSelf}
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-2 text-sm rounded-lg transition-colors flex items-center justify-center sm:justify-start gap-1 sm:gap-2 ${currentContainer.isSelf || (isActionProcessing && currentAction === 'update')
                   ? 'bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
                   : 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600'
                   }`}
-                title="更新"
+                title={currentContainer.isSelf ? '请通过 Docker Compose 更新本容器' : '更新'}
               >
                 {isActionProcessing && currentAction === 'update' ? (
                   <>

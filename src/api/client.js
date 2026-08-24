@@ -113,6 +113,7 @@ export const containerAPI = {
   },
   backupContainer: () => apiClient.post('/api/container/backup', undefined, { timeout: 2 * 60 * 1000 }),
   listBackups: () => apiClient.get('/api/container/listBackups'),
+  downloadBackup: (filename) => apiClient.get(`/api/container/backups/download?filename=${encodeURIComponent(filename)}`, { responseType: 'blob' }),
   restoreContainer: (filename) => {
     return apiClient.post('/api/container/backups/restore', { filename })
   },

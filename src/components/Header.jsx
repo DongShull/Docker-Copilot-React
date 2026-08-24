@@ -4,7 +4,8 @@ import {
   LogOut,
   Server,
   DatabaseBackup,
-  Info
+  Info,
+  Palette
 } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle.jsx'
 import { UpdatePrompt } from './UpdatePrompt.jsx'
@@ -23,17 +24,15 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
         return dateString
       }
 
-      // 转换为北京时间 (UTC+8)
-      const beijingDate = new Date(date.getTime() + 8 * 60 * 60 * 1000)
-
-      return beijingDate.toLocaleString('zh-CN', {
+      return date.toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false
+        hour12: false,
+        timeZone: 'Asia/Shanghai'
       }).replace(/\//g, '-')
     } catch (error) {
       return dateString
@@ -47,6 +46,7 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
     backendVersion,
     remoteVersion,
     buildDate,
+    updateMode,
     hasBackendUpdate,
     updateBackend,
     checkForUpdates
@@ -79,6 +79,11 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
       id: '#backups',
       label: '备份',
       icon: DatabaseBackup,
+    },
+    {
+      id: '#icons',
+      label: '图标',
+      icon: Palette,
     },
     {
       id: '#about',
@@ -310,7 +315,7 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
                   </div>
                   <div className="rounded-lg bg-gray-50 dark:bg-gray-800/60 px-2.5 py-2">
                     <span className="text-[10px] text-gray-400 dark:text-gray-500">后端</span>
-                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 mt-0.5">onlyLTY</p>
+                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 mt-0.5">autunn</p>
                   </div>
                 </div>
 
@@ -346,6 +351,7 @@ export function Sidebar({ activeTab, onTabChange, onLogout, isCollapsed = false,
         onClose={() => setShowUpdatePrompt(false)}
         backendVersion={backendVersion}
         remoteVersion={remoteVersion}
+        updateMode={updateMode}
         hasBackendUpdate={hasBackendUpdate}
         onUpdateBackend={updateBackend}
       />
@@ -370,6 +376,11 @@ export function MobileBottomNav({ activeTab, onTabChange, windowWidth = 1024 }) 
       id: '#backups',
       label: '备份',
       icon: DatabaseBackup,
+    },
+    {
+      id: '#icons',
+      label: '图标',
+      icon: Palette,
     },
     {
       id: '#about',

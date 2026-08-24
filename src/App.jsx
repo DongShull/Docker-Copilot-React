@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { lazy, Suspense, useEffect, useState } from 'react'
 import { Auth } from './components/Auth.jsx'
 import { Sidebar, MobileBottomNav } from './components/Header.jsx'
-import { Containers } from './components/Containers.jsx'
-import { Images } from './components/Images.jsx'
-import { Backups } from './components/Backups.jsx'
-import { Icons } from './components/Icons.jsx'
-import { About } from './components/About.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cn } from './utils/cn.js'
 
 import { containerAPI, imageAPI } from './api/client.js'
+
+const Containers = lazy(() => import('./components/Containers.jsx').then(module => ({ default: module.Containers })))
+const Images = lazy(() => import('./components/Images.jsx').then(module => ({ default: module.Images })))
+const Backups = lazy(() => import('./components/Backups.jsx').then(module => ({ default: module.Backups })))
+const Icons = lazy(() => import('./components/Icons.jsx').then(module => ({ default: module.Icons })))
+const About = lazy(() => import('./components/About.jsx').then(module => ({ default: module.About })))
 
 // 创建一个全局的QueryClient实例
 const queryClient = new QueryClient({
@@ -22,9 +23,18 @@ const queryClient = new QueryClient({
   },
 })
 
+const supportedTabs = new Set(['#containers', '#images', '#icons', '#backups', '#about'])
+
+function initialTab() {
+  if (typeof window !== 'undefined' && supportedTabs.has(window.location.hash)) {
+    return window.location.hash
+  }
+  return '#containers'
+}
+
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [activeTab, setActiveTab] = useState('#containers')
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
   const [userPreferredCollapsed, setUserPreferredCollapsed] = useState(false)
 
@@ -65,7 +75,7 @@ function AppContent() {
         console.error('Failed to sync icons:', error)
       }
     }
-    syncIcons()
+    if (token) syncIcons()
 
     // 监听自定义事件，用于在本标签页中处理认证状态变化
     const handleAuthChange = (e) => {
@@ -85,10 +95,15 @@ function AppContent() {
     }
 
     window.addEventListener('resize', handleResize)
+    const handleHashChange = () => {
+      if (supportedTabs.has(window.location.hash)) setActiveTab(window.location.hash)
+    }
+    window.addEventListener('hashchange', handleHashChange)
 
     return () => {
       window.removeEventListener('authChange', handleAuthChange)
       window.removeEventListener('resize', handleResize)
+      window.removeEventListener('hashchange', handleHashChange)
     }
   }, [])
 
@@ -106,7 +121,9 @@ function AppContent() {
   }
 
   const handleTabChange = (tab) => {
+    if (!supportedTabs.has(tab)) return
     setActiveTab(tab)
+    if (window.location.hash !== tab) window.history.replaceState(null, '', tab)
   }
 
   const handleToggleCollapse = () => {
@@ -160,7 +177,9 @@ function AppContent() {
               : 'ml-64'
       )}>
         <div className="flex-1 p-2 sm:p-4 lg:p-4 pt-4 sm:pt-4">
-          {renderContent()}
+          <Suspense fallback={<div className="card rounded-2xl p-8 text-center text-gray-500 dark:text-gray-400">页面加载中...</div>}>
+            {renderContent()}
+          </Suspense>
         </div>
       </main>
       <MobileBottomNav

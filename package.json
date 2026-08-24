@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "sync:icon-catalog": "node scripts/sync-icon-catalog.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.8.4",
