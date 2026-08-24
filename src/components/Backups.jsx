@@ -7,11 +7,43 @@ import {
   CheckCircle,
   RotateCcw,
   FileCode,
+  Download,
   Save,
   X
 } from 'lucide-react'
-import { containerAPI } from '../api/client.js'
+import { containerAPI, progressAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
+
+const delay = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds))
+
+async function waitForRestoreTask(taskID) {
+  const deadline = Date.now() + 24 * 60 * 60 * 1000
+  let consecutiveErrors = 0
+  while (Date.now() < deadline) {
+    try {
+      const response = await progressAPI.getProgress(taskID)
+      const task = response.data?.data
+      if (response.data?.code !== 200 || !task) {
+        throw new Error(response.data?.msg || '无法读取恢复任务状态')
+      }
+      consecutiveErrors = 0
+      if (task.status === 'failed') {
+        const terminalError = new Error(task.detailMsg || task.message || '恢复失败')
+        terminalError.isTerminal = true
+        throw terminalError
+      }
+      if (task.isDone === true && task.status === 'completed') {
+        return task
+      }
+    } catch (error) {
+      if (error.isTerminal) throw error
+      consecutiveErrors++
+      if (consecutiveErrors >= 5) throw error
+    }
+    await delay(2000)
+  }
+  throw new Error('恢复任务超时，请检查容器状态')
+}
 
 export function Backups() {
   const [backups, setBackups] = useState([])
@@ -106,6 +138,20 @@ export function Backups() {
     }
   }
 
+  const showComposeBackupConfirm = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: '创建 Compose 备份',
+      message: '默认会省略密码、令牌等敏感环境变量的值，并在 YAML 中保留空引用。如果管理员启用了 COMPOSE_BACKUP_INCLUDE_SECRETS，敏感值将以明文写入文件，请妥善保护备份。',
+      onConfirm: () => {
+        setConfirmModal({ isOpen: false })
+        handleBackupToCompose()
+      },
+      onCancel: () => setConfirmModal({ isOpen: false }),
+      type: 'warning',
+    })
+  }
+
   const handleRestore = async (filename) => {
     try {
       setIsLoading(true)
@@ -117,6 +163,11 @@ export function Backups() {
       console.log('恢复备份响应:', response.data)
 
       if (response.data && (response.data.code === 0 || response.data.code === 200)) {
+        const taskID = response.data.data?.taskID
+        if (!taskID) {
+          throw new Error('后端未返回恢复任务 ID')
+        }
+        await waitForRestoreTask(taskID)
         setSuccessModal({ isOpen: true, message: `备份 ${filename} 恢复成功` })
       } else {
         setError(response.data?.msg || `备份 ${filename} 恢复失败`)
@@ -154,11 +205,28 @@ export function Backups() {
     }
   }
 
+  const handleDownload = async (filename) => {
+    try {
+      setError(null)
+      const response = await containerAPI.downloadBackup(filename)
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      setError(error.response?.data?.msg || error.message || '下载备份失败')
+    }
+  }
+
   const showRestoreConfirm = (filename) => {
     setConfirmModal({
       isOpen: true,
       title: '恢复备份',
-      message: `确定要恢复备份文件 ${filename} 吗？这将覆盖当前容器配置。`,
+      message: `确定要恢复备份文件 ${filename} 吗？备份中的容器会被重新创建，同名容器将导致该项恢复失败。`,
       onConfirm: () => {
         setConfirmModal({ ...confirmModal, isOpen: false })
         handleRestore(filename)
@@ -386,7 +454,7 @@ export function Backups() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleBackupToCompose}
+              onClick={showComposeBackupConfirm}
               disabled={isBackingUp}
               className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors disabled:opacity-50"
             >
@@ -574,12 +642,22 @@ export function Backups() {
                       </div>
 
                       <div className="flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        {getFileType(backup) === 'JSON' && (
+                          <button
+                            onClick={() => showRestoreConfirm(backup)}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-sm text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors active:scale-95"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            <span>恢复</span>
+                          </button>
+                        )}
                         <button
-                          onClick={() => showRestoreConfirm(backup)}
-                          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-sm text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors active:scale-95"
+                          onClick={() => handleDownload(backup)}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors active:scale-95"
+                          title="下载备份"
                         >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                          <span>恢复</span>
+                          <Download className="h-3.5 w-3.5" />
+                          <span>下载</span>
                         </button>
                         <button
                           onClick={() => showDeleteConfirm(backup)}

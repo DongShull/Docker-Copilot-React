@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || '/manager/',
   plugins: [react({
     jsxRuntime: 'automatic'
   })],
@@ -12,17 +13,5 @@ export default defineConfig({
   build: {
     // 确保静态资源被正确复制
     assetsDir: 'assets'
-  },
-  esbuild: {
-    loader: 'jsx',
-    include: /src\/.*\.[jt]sx?$/,
-    exclude: []
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx'
-      }
-    }
   }
 })

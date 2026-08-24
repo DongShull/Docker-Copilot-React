@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 // 动态获取 API 基础地址
-// 优先级：环境变量 > window.__API_BASE_URL > localStorage > 当前主机 > 默认值
+// 优先级：环境变量 > window.__API_BASE_URL > 当前主机 > 默认值。
+// 不从 localStorage 读取 API 地址，避免持久化数据把管理员令牌发送到其他主机。
 function getAPIBaseURL() {
   // 1. 最高优先级：环境变量（构建时注入）
   if (import.meta.env.VITE_API_BASE_URL) {
@@ -15,21 +16,14 @@ function getAPIBaseURL() {
     return window.__API_BASE_URL
   }
 
-  // 3. 检查 localStorage（用户保存的地址）
-  const savedURL = localStorage.getItem('api_base_url')
-  if (savedURL) {
-    console.log('Using localStorage API URL:', savedURL)
-    return savedURL
-  }
-
-  // 4. 使用当前主机
+  // 3. 使用当前主机
   if (typeof window !== 'undefined' && window.location.host) {
     const currentHostURL = `${window.location.protocol}//${window.location.host}`
     console.log('Using current host API URL:', currentHostURL)
     return currentHostURL
   }
 
-  // 5. 最后的默认值
+  // 4. 最后的默认值
   const fallbackURL = 'http://localhost'
   console.log('Using fallback API URL:', fallbackURL)
   return fallbackURL
@@ -49,7 +43,7 @@ const apiClient = axios.create({
 // 请求拦截器 - 添加认证token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('docker_copilot_token')
+    const token = sessionStorage.getItem('docker_copilot_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -66,8 +60,8 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // 只在有token的情况下移除它
-      if (localStorage.getItem('docker_copilot_token')) {
-        localStorage.removeItem('docker_copilot_token')
+      if (sessionStorage.getItem('docker_copilot_token')) {
+        sessionStorage.removeItem('docker_copilot_token')
         // 触发自定义事件通知应用认证状态变化
         window.dispatchEvent(new CustomEvent('authChange', { detail: { authenticated: false } }))
       }
@@ -96,7 +90,7 @@ export const versionAPI = {
     }
     return apiClient.get(`/api/version?type=${type}`)
   },
-  updateProgram: () => apiClient.put('/api/program'),
+  updateProgram: () => apiClient.put('/api/program', undefined, { timeout: 5 * 60 * 1000 }),
 }
 
 // 容器相关API
@@ -117,13 +111,14 @@ export const containerAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-  backupContainer: () => apiClient.get('/api/container/backup'),
+  backupContainer: () => apiClient.post('/api/container/backup', undefined, { timeout: 2 * 60 * 1000 }),
   listBackups: () => apiClient.get('/api/container/listBackups'),
+  downloadBackup: (filename) => apiClient.get(`/api/container/backups/download?filename=${encodeURIComponent(filename)}`, { responseType: 'blob' }),
   restoreContainer: (filename) => {
-    return apiClient.post(`/api/container/backups/${filename}/restore`)
+    return apiClient.post('/api/container/backups/restore', { filename })
   },
   deleteBackup: (filename) => apiClient.delete(`/api/container/backups?filename=${encodeURIComponent(filename)}`),
-  backupToCompose: () => apiClient.get('/api/container/backup2compose'),
+  backupToCompose: () => apiClient.post('/api/container/backup2compose', undefined, { timeout: 2 * 60 * 1000 }),
 }
 
 // 镜像相关API

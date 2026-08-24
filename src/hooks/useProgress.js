@@ -1,125 +1,79 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { progressAPI } from '../api/client.js'
 
-/**
- * 进度查询Hook
- * @param {string} taskId - 任务ID
- * @param {function} onComplete - 完成回调
- * @param {function} onError - 错误回调
- */
+const POLL_INTERVAL = 2000
+const POLL_TIMEOUT = 30 * 60 * 1000
+
 export function useProgress(taskId, onComplete, onError) {
   const [progress, setProgress] = useState(null)
   const [isPolling, setIsPolling] = useState(false)
-  const intervalRef = useRef(null)
+  const callbacksRef = useRef({ onComplete, onError })
 
   useEffect(() => {
-    if (!taskId || isPolling) return
-import { useState, useEffect, useRef } from 'react'
-import { progressAPI } from '../api/client.js'
-
-/**
- * 进度查询Hook
- * @param {string} taskId - 任务ID
- * @param {function} onComplete - 完成回调
- * @param {function} onError - 错误回调
- */
-export function useProgress(taskId, onComplete, onError) {
-  const [progress, setProgress] = useState(null)
-  const [isPolling, setIsPolling] = useState(false)
-  const intervalRef = useRef(null)
+    callbacksRef.current = { onComplete, onError }
+  }, [onComplete, onError])
 
   useEffect(() => {
-    if (!taskId || isPolling) return
+    if (!taskId) {
+      setIsPolling(false)
+      setProgress(null)
+      return undefined
+    }
 
+    let cancelled = false
+    let timer = null
+    const deadline = Date.now() + POLL_TIMEOUT
     setIsPolling(true)
 
-    const pollProgress = async () => {
+    const stop = () => {
+      if (timer) {
+        clearTimeout(timer)
+        timer = null
+      }
+      if (!cancelled) setIsPolling(false)
+    }
+
+    const fail = (error) => {
+      stop()
+      callbacksRef.current.onError?.(error)
+    }
+
+    const poll = async () => {
       try {
-        const response = await progressAPI.getProgress(taskId)
-        const data = response.data
-
-        setProgress(data)
-
-        // 检查任务是否完成
-        if (data.code === 200 && data.data?.status === 'completed') {
-          stopPolling()
-          onComplete?.(data)
-        } else if (data.code !== 200 && data.code !== 0) {
-          stopPolling()
-          onError?.(data)
+        if (Date.now() >= deadline) {
+          fail(new Error('任务进度查询超时'))
+          return
         }
-      } catch (error) {
-        console.error('查询进度失败:', error)
-        stopPolling()
-        onError?.(error)
-      }
-    }
-
-    const stopPolling = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      setIsPolling(false)
-    }
-
-    // 立即执行一次
-    pollProgress()
-
-    // 每2秒查询一次进度
-    intervalRef.current = setInterval(pollProgress, 2000)
-
-    // 清理函数
-    return () => {
-      stopPolling()
-    }
-  }, [taskId, isPolling, onComplete, onError])
-
-  return { progress, isPolling }
-}
-    setIsPolling(true)
-
-    const pollProgress = async () => {
-      try {
         const response = await progressAPI.getProgress(taskId)
-        const data = response.data
-
-        setProgress(data)
-
-        // 检查任务是否完成
-        if (data.code === 200 && data.data?.status === 'completed') {
-          stopPolling()
-          onComplete?.(data)
-        } else if (data.code !== 200 && data.code !== 0) {
-          stopPolling()
-          onError?.(data)
+        if (cancelled) return
+        const envelope = response.data
+        const task = envelope?.data
+        if (envelope?.code !== 200 || !task) {
+          fail(new Error(envelope?.msg || '无法读取任务状态'))
+          return
         }
+        setProgress(task)
+        if (task.status === 'failed') {
+          fail(new Error(task.detailMsg || task.message || '任务失败'))
+          return
+        }
+        if (task.isDone === true && task.status === 'completed') {
+          stop()
+          callbacksRef.current.onComplete?.(task)
+          return
+        }
+        timer = setTimeout(poll, POLL_INTERVAL)
       } catch (error) {
-        console.error('查询进度失败:', error)
-        stopPolling()
-        onError?.(error)
+        if (!cancelled) fail(error)
       }
     }
 
-    const stopPolling = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      setIsPolling(false)
-    }
-
-    // 立即执行一次
-    pollProgress()
-
-    // 每2秒查询一次进度
-    intervalRef.current = setInterval(pollProgress, 2000)
-
-    // 清理函数
+    poll()
     return () => {
-      stopPolling()
+      cancelled = true
+      if (timer) clearTimeout(timer)
     }
-  }, [taskId, isPolling, onComplete, onError])
+  }, [taskId])
 
   return { progress, isPolling }
 }

@@ -3,25 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { HardDrive, Trash2, RefreshCw, Link, BrushCleaning, X, AlertCircle, CheckCircle } from 'lucide-react'
 import { imageAPI } from '../api/client.js'
 import { cn } from '../utils/cn.js'
-import { getImageLogo } from '../config/imageLogos.js'
-
-// 安全的图片组件
-function SafeImage({ src, alt, className, fallback }) {
-  const [hasError, setHasError] = React.useState(false)
-
-  if (hasError || !src) {
-    return fallback
-  }
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setHasError(true)}
-    />
-  )
-}
+import { ImageIcon } from './ImageIcon.jsx'
 
 export function Images() {
   const [images, setImages] = useState([])
@@ -409,11 +391,11 @@ export function Images() {
                   {/* 头部：图标、名字、状态指示器和大小 */}
                   <div className="flex items-start gap-3 mb-4">
                     <div className="h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <SafeImage
-                        src={getImageLogo(image.name, customIcons)}
+                      <ImageIcon
+                        imageName={`${image.name}:${image.tag}`}
+                        customLogos={customIcons}
                         alt={image.name}
-                        className="h-10 w-10 object-cover"
-                        fallback={<HardDrive className="h-5 w-5 text-gray-500 dark:text-gray-400" />}
+                        className="h-10 w-10 rounded-lg"
                       />
                     </div>
                     
@@ -518,11 +500,11 @@ export function Images() {
                 {pruneModal.images.map((img) => (
                   <div key={img.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-700 rounded-xl hover:shadow-md transition-all duration-200">
                     <div className="h-8 w-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <SafeImage
-                        src={getImageLogo(img.name, customIcons)}
+                      <ImageIcon
+                        imageName={`${img.name}:${img.tag}`}
+                        customLogos={customIcons}
                         alt={img.name}
-                        className="h-8 w-8 object-cover"
-                        fallback={<HardDrive className="h-4 w-4 text-gray-500 dark:text-gray-400" />}
+                        className="h-8 w-8 rounded-lg text-xs"
                       />
                     </div>
                     <div className="flex-1 min-w-0">

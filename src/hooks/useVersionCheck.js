@@ -1,51 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { versionAPI } from '../api/client.js'
-
-/**
- * 检查版本是否需要更新
- * @param {string} currentVersion 当前版本
- * @param {string} latestVersion 最新版本
- * @returns {boolean} 是否需要更新
- */
-function shouldUpdate(currentVersion, latestVersion) {
-  if (currentVersion === 'unknown' || latestVersion === 'unknown') {
-    return false
-  }
-  
-  const current = parseVersion(currentVersion)
-  const latest = parseVersion(latestVersion)
-  
-  if (current === null || latest === null) {
-    return false
-  }
-  
-  // 比较 major.minor.patch
-  if (latest.major > current.major) return true
-  if (latest.major === current.major && latest.minor > current.minor) return true
-  if (latest.major === current.major && latest.minor === current.minor && latest.patch > current.patch) return true
-  
-  return false
-}
-
-/**
- * 解析版本号
- * @param {string} version 版本号字符串 (e.g., "1.0.0")
- * @returns {Object|null} 解析后的版本对象或 null
- */
-function parseVersion(version) {
-  if (!version || typeof version !== 'string') return null
-  
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-.+)?$/)
-  if (!match) return null
-  
-  return {
-    major: parseInt(match[1], 10),
-    minor: parseInt(match[2], 10),
-    patch: parseInt(match[3], 10),
-    raw: version,
-  }
-}
+import { shouldUpdate } from '../utils/version.js'
 
 /**
  * 版本检查 Hook
@@ -64,12 +20,14 @@ export function useVersionCheck() {
         
         let backendVersion = 'unknown'
         let buildDate = ''
+        let updateMode = 'container'
         
         if (localResponse.data.code === 200 || localResponse.data.code === 0) {
           const localData = localResponse.data.data
           if (localData && typeof localData === 'object') {
             backendVersion = localData.version || 'unknown'
             buildDate = localData.buildDate || ''
+            updateMode = localData.updateMode || 'container'
           } else if (typeof localData === 'string') {
             backendVersion = localData
           }
@@ -97,6 +55,7 @@ export function useVersionCheck() {
           backendVersion,
           remoteVersion,
           buildDate,
+          updateMode,
           hasBackendUpdate: shouldUpdate(backendVersion, remoteVersion)
         }
       } catch (error) {
@@ -105,6 +64,7 @@ export function useVersionCheck() {
           backendVersion: 'unknown',
           remoteVersion: 'unknown',
           buildDate: '',
+          updateMode: 'container',
           hasBackendUpdate: false
         }
       }
@@ -142,6 +102,7 @@ export function useVersionCheck() {
     backendVersion: versionData?.backendVersion,
     remoteVersion: versionData?.remoteVersion,
     buildDate: versionData?.buildDate,
+    updateMode: versionData?.updateMode || 'container',
     hasBackendUpdate: versionData?.hasBackendUpdate,
     
     // 方法

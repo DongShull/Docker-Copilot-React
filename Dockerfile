@@ -1,5 +1,5 @@
 # 构建阶段 - Build Stage
-FROM node:18-alpine AS builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -8,33 +8,29 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装依赖
-RUN npm install
+RUN npm ci
 
 # 复制项目文件
 COPY . .
 
 # 构建应用
-RUN npm run build
+RUN npm test && VITE_BASE_PATH=/ npm run build
 
 # ============================================
 # 运行阶段 - Production Stage
-FROM node:18-alpine
-
-# 安装轻量级HTTP服务器和必要工具（使用 sh 而非 bash）
-RUN npm install -g serve && apk add --no-cache gawk
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 
 # 设置工作目录
 WORKDIR /app
 
 # 从构建阶段复制构建结果
-COPY --from=builder /app/dist ./dist
-
-# 从构建阶段复制配置文件到 dist 目录中，使其可以通过 Web 服务器访问
-COPY --from=builder /app/src/config ./dist/config
+COPY --chown=node:node --from=builder /app/dist ./dist
 
 # 复制配置脚本
-COPY docker-config.sh /app/docker-config.sh
-RUN chmod +x /app/docker-config.sh
+COPY --chown=node:node docker-config.sh server.mjs /app/
+RUN chmod 0555 /app/docker-config.sh /app/server.mjs
+
+USER node
 
 # 暴露端口
 EXPOSE 12713

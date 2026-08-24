@@ -11,6 +11,7 @@ export function UpdatePrompt({
   onClose,
   backendVersion,
   remoteVersion,
+  updateMode = 'container',
   hasBackendUpdate,
   onUpdateBackend,
   isUpdating = false
@@ -63,10 +64,17 @@ export function UpdatePrompt({
             {/* 提示文本 */}
             <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700/50">
               <p className="text-sm text-blue-800 dark:text-blue-300">
-                {hasBackendUpdate
-                  ? '检测到后端有新版本可用。建议您立即更新以获得最新功能和安全补丁。'
+                {hasBackendUpdate && updateMode === 'container'
+                  ? '检测到新版本。当前由容器镜像管理，请在部署目录拉取镜像并重新创建容器。'
+                  : hasBackendUpdate
+                    ? '检测到后端有新版本可用。建议您立即更新以获得最新功能和安全补丁。'
                   : '您正在使用最新版本，感谢您的支持！'}
               </p>
+              {hasBackendUpdate && updateMode === 'container' && (
+                <code className="block mt-3 p-2 rounded bg-blue-100 dark:bg-blue-950 text-xs break-all select-all">
+                  docker compose pull &amp;&amp; docker compose up -d
+                </code>
+              )}
             </div>
           </div>
 
@@ -79,7 +87,7 @@ export function UpdatePrompt({
               稍后
             </button>
 
-            {hasBackendUpdate && (
+            {hasBackendUpdate && updateMode !== 'container' && (
               <button
                 onClick={onUpdateBackend}
                 disabled={isUpdating}
